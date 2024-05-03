@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reproduzindo MIDI com WebAudio API</title>
+</head>
+<body>
+<button onclick="initWebSocket()">Play MIDI</button>
+
+<script>
+let audioContext = null;
+
+function initWebSocket() {
+  const ws = new WebSocket('ws://localhost:3000');
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    console.log('Pacote recebido:', data); // Mostra o pacote recebido
+
+    if (data.name === 'Note on') {
+      playNote(data.noteNumber);
+    } else if (data.event === 'endOfFile') {
+      console.log('MIDI file has been played.');
+    }
+  };
+
+  function playNote(noteNumber) {
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    const oscillator = audioContext.createOscillator();
+    oscillator.type = 'sine';
+    oscillator.frequency.setValueAtTime(440 * Math.pow(2, (noteNumber - 69) / 12), audioContext.currentTime);
+    oscillator.connect(audioContext.destination);
+    oscillator.start();
+    setTimeout(() => {
+      oscillator.stop();
+    }, 200); // Ajuste este valor para a duração desejada da nota
+  }
+}
+</script>
+</body>
+</html>
